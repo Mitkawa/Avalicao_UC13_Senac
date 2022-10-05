@@ -7,147 +7,71 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using CadastroAluno.Data;
 using CadastroAluno.Models;
+using CadastroAluno.Contratos;
 
 namespace CadastroAluno.Controllers
 {
     public class AlunosController : Controller
     {
-        private readonly CadastroAlunoContext _context;
+        private readonly IAlunosRepository _alunosRepository;
 
-        public AlunosController(CadastroAlunoContext context)
+        public AlunosController(IAlunosRepository alunosRepository)
         {
-            _context = context;
+            _alunosRepository = alunosRepository;
         }
 
-        // GET: Alunos
-        public async Task<IActionResult> Index()
+        public async Task<ActionResult<IEnumerable<Aluno>>> Index()
         {
-            return View(await _context.Aluno.ToListAsync());
+            return View(await _alunosRepository.GetAlunos());
         }
 
-        // GET: Alunos/Details/5
-        public async Task<IActionResult> Details(int? id)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Aluno>> Details(int id)
         {
-            if (id == null)
+            var Aluno = await _alunosRepository.GetAlunosById(id);
+
+            if (Aluno == null)
             {
                 return NotFound();
             }
 
-            var aluno = await _context.Aluno
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (aluno == null)
-            {
-                return NotFound();
-            }
-
-            return View(aluno);
+            return View(Aluno);
         }
 
-        // GET: Alunos/Create
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Edit(int id, Aluno aluno)
+        {
+            var totalAlteracoes = await _alunosRepository.UpdateAluno(id, aluno);
+
+            if (totalAlteracoes == 0)
+                return NotFound();
+
+            return Ok("Alterações realizadas com sucesso!");
+        }
+
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Alunos/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nome,Turma,Media")] Aluno aluno)
+        public async Task<ActionResult<Aluno>> Create(Aluno aluno)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _context.Add(aluno);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return UnprocessableEntity(aluno);
             }
-            return View(aluno);
+
+            var result = await _alunosRepository.AddAlunos(aluno);
+
+            return CreatedAtAction("GetAlunos", new { id = result.Id }, result);
         }
 
-        // GET: Alunos/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteAluno(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var aluno = await _context.Aluno.FindAsync(id);
-            if (aluno == null)
-            {
-                return NotFound();
-            }
-            return View(aluno);
-        }
-
-        // POST: Alunos/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nome,Turma,Media")] Aluno aluno)
-        {
-            if (id != aluno.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(aluno);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!AlunoExists(aluno.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(aluno);
-        }
-
-        // GET: Alunos/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var aluno = await _context.Aluno
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (aluno == null)
-            {
-                return NotFound();
-            }
-
-            return View(aluno);
-        }
-
-        // POST: Alunos/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var aluno = await _context.Aluno.FindAsync(id);
-            _context.Aluno.Remove(aluno);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool AlunoExists(int id)
-        {
-            return _context.Aluno.Any(e => e.Id == id);
+            await _alunosRepository.DeleteAluno(id);
+            return NoContent();
         }
     }
 }
