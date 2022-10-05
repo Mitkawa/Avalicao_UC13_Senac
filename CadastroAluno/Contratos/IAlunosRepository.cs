@@ -17,5 +17,8 @@ namespace CadastroAluno.Contratos
         Task<int> UpdateAluno(int id, Aluno alunoAlterado);
 
         Task DeleteAluno(int id);
+
+       // bool AlunoExists(int id);
+
     }
 }

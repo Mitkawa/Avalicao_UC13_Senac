@@ -25,8 +25,10 @@ namespace CadastroAluno.Controllers
             return View(await _alunosRepository.GetAlunos());
         }
 
+
+
         [HttpGet("{id}")]
-        public async Task<ActionResult<Aluno>> Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
             var Aluno = await _alunosRepository.GetAlunosById(id);
 
@@ -38,7 +40,15 @@ namespace CadastroAluno.Controllers
             return View(Aluno);
         }
 
-        [HttpPut("{id}")]
+        public async Task<IActionResult> Edit(int id)
+        {
+
+            var aluno = await _alunosRepository.GetAlunosById(id);
+
+            return View(aluno);
+        }
+
+       [HttpPost]
         public async Task<IActionResult> Edit(int id, Aluno aluno)
         {
             var totalAlteracoes = await _alunosRepository.UpdateAluno(id, aluno);
@@ -67,7 +77,16 @@ namespace CadastroAluno.Controllers
             return CreatedAtAction("GetAlunos", new { id = result.Id }, result);
         }
 
-        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+
+            var aluno = await _alunosRepository.GetAlunosById(id);
+
+            return View(aluno);
+        }
+
+
+        [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteAluno(int id)
         {
             await _alunosRepository.DeleteAluno(id);
