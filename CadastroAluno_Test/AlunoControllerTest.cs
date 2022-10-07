@@ -74,9 +74,89 @@ namespace CadastroAluno_Test
             var alunoid = id;
             //Act
             var Consulta = await controller.Details(alunoid);
-            Assert.IsType<BadRequestObjectResult>(Consulta);
-            //Erro, está retornando badRequest para todas as ocasiões 
+            Assert.IsType<BadRequestResult>(Consulta);
         }
 
+        [Fact]
+        public async void Detais_RetornaBadRequestComIdNulo()
+        {
+            //arrange
+            AlunosController controller = new AlunosController(_mockalunoservice.Object);
+            //act
+            var result = await controller.Details(-1);
+            //assert
+            Assert.IsType<BadRequestResult>(result);
+        }
+
+        [Fact]
+        public async void NotFound_ParaIdValido_ViewResultAlunoEncontrado()
+        {
+            //arrang
+            AlunosController controller = new AlunosController(_mockalunoservice.Object);
+            //act
+            var result = await controller.Details(30);
+            //assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async void MetodoDetails_RetornaViewResultParaAlunoEncontrado()
+        {
+            //arrange
+            AlunosController controller = new AlunosController(_mockalunoservice.Object);
+
+            Aluno aluno = new Aluno();
+            aluno.Id = 1;
+
+            _mockalunoservice.Setup(a => a.GetAlunosById(1))
+               .ReturnsAsync(aluno);
+
+            //act
+            var result = await controller.Details(1);
+
+            //assert
+            Assert.IsType<ViewResult>(result);
+        }
+
+        [Fact]
+        public async void MetodoDetails_ChamaRepositorioApenas_UmaVez()
+        {
+            //arrange
+            AlunosController controller = new AlunosController(_mockalunoservice.Object);
+
+            Aluno aluno = new Aluno();
+            aluno.Id = 1;
+
+            _mockalunoservice.Setup(a => a.GetAlunosById(1))
+                .ReturnsAsync(aluno);
+            //act
+            await controller.Details(2);
+            //assert
+            _mockalunoservice.Verify(ar => ar.GetAlunosById(2), Times.Once);
+
+
+        }
+        [Fact]
+        public async void MetodoCreate_VerificaChamaUnicaVezCasoInvalidaRetornarUmaView()
+        {
+            //arrange
+            AlunosController controller = new AlunosController(_mockalunoservice.Object);
+
+            Aluno aluno = new Aluno();
+
+            aluno.Id = -55;
+            aluno.Nome = null;
+            aluno.Turma = null;
+            aluno.Media = -105;
+
+            //act
+            var result = await controller.Create(aluno);
+
+            //assert
+            //assert
+            _mockalunoservice.Verify(ar => ar.AddAlunos(aluno), Times.Once);
+
+            Assert.IsType<RedirectToActionResult>(result);
+        }
     }
 }
